@@ -94,3 +94,28 @@ class Briefing(BriefingContent):
     link: str
     parse_quality: str
     warnings: list[str] = []
+    
+    
+    # ---------- Topic explorer (Stage 7b) ----------
+
+class RankedPaper(BaseModel):
+    """A search candidate with its similarity to the user's topic."""
+    paper: PaperMeta
+    score: float
+
+
+class SearchPlan(BaseModel):
+    """LLM output: how to search arXiv for a topic."""
+    keywords: str = Field(description="2-6 technical keywords for an arXiv search")
+    wants_recent: bool = Field(description="True if the topic asks for recent, latest or new work")
+
+
+class Judgment(BaseModel):
+    """LLM output: are the candidates good enough, and if not, what to search next?"""
+    relevant_ids: list[str] = Field(default_factory=list,
+                                    description="arXiv IDs of candidates genuinely about the topic")
+    best_id: str | None = Field(default=None, description="The single best paper to brief, or null")
+    good_enough: bool = Field(description="True if best_id is clearly on-topic")
+    refined_query: str | None = Field(
+        default=None, description="If not good enough: a NEW search query, different from those tried")
+    reason: str = Field(description="One sentence explaining the decision")

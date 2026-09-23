@@ -1,4 +1,4 @@
-# backend/services/arxiv_client.py
+"""Search arXiv via its official Atom API and convert results into PaperMeta objects."""
 import logging
 import re
 import time
@@ -6,13 +6,17 @@ import time
 import feedparser
 import httpx
 
-from backend.core.exceptions import ArxivAPIError
+from backend.core.exceptions import ArxivAPIError, ArxivQueryError        # NEW
 from backend.models.schemas import PaperMeta
 
 logger = logging.getLogger(__name__)
 
 ARXIV_API = "https://export.arxiv.org/api/query"
 ARXIV_ID_RE = re.compile(r"(\d{4}\.\d{4,5})(v\d+)?")
+BOOLEAN_RE = re.compile(r'\b(AND|OR|ANDNOT)\b|["()]')
+FIELD_PREFIX_RE = re.compile(r"\b(all|ti|au|abs|cat):", re.IGNORECASE)    # NEW
+STOP_WORDS = {"a", "an", "and", "are", "as", "at", "be", "by", "for", "from",  # NEW
+              "in", "into", "is", "it", "of", "on", "or", "the", "to", "with"}
 MIN_SECONDS_BETWEEN_CALLS = 3.0
 _last_call = 0.0
 
@@ -30,6 +34,23 @@ def _respect_rate_limit() -> None:
     if wait > 0:
         time.sleep(wait)
     _last_call = time.time()
+
+
+def _build_search_query(query: str) -> str:
+    """Turn a query into arXiv search syntax.
+
+    - Already uses field prefixes (ti:, au:, abs:, all:, cat:) -> passed through unchanged
+      e.g. ti:"Attention Is All You Need"
+    - Uses AND / OR / quotes / parentheses -> searched in all fields as written
+    - Plain keywords -> every non-stop-word must match:
+      'Attention Is All You Need' -> 'all:Attention AND all:All AND all:You AND all:Need'
+    """
+    if FIELD_PREFIX_RE.search(query):                                      # NEW
+        return query
+    if BOOLEAN_RE.search(query):
+        return f"all:{query}"
+    words = [w for w in query.split() if w.lower() not in STOP_WORDS] or query.split()  # NEW
+    return " AND ".join(f"all:{word}" for word in words)
 
 
 def _entry_to_paper(entry) -> PaperMeta:
@@ -57,8 +78,9 @@ def _entry_to_paper(entry) -> PaperMeta:
 
 
 def search(query: str | None = None, id_list: str | None = None,
-           max_results: int = 10) -> list[PaperMeta]:
-    """Search arXiv by topic (query) or by ID (id_list). Returns [] if nothing matches."""
+           max_results: int = 10, sort_by: str = "relevance") -> list[PaperMeta]:
+    """Search arXiv by topic (query) or by ID (id_list). Returns [] if nothing matches.
+    sort_by: "relevance" or "submittedDate" (newest first)."""
     if not query and not id_list:
         raise ValueError("Provide either query or id_list")
 
@@ -66,13 +88,18 @@ def search(query: str | None = None, id_list: str | None = None,
     if id_list:
         params["id_list"] = id_list
     else:
-        params["search_query"] = f"all:{query}"
-        params["sortBy"] = "relevance"
+        params["search_query"] = _build_search_query(query)
+        params["sortBy"] = sort_by
 
     _respect_rate_limit()
     try:
         response = httpx.get(ARXIV_API, params=params, timeout=30)
         response.raise_for_status()
+    except httpx.HTTPStatusError as e:                                     # NEW
+        if e.response.status_code == 400:
+            raise ArxivQueryError(
+                f"arXiv rejected the query {params.get('search_query')!r}") from e
+        raise ArxivAPIError(f"arXiv API request failed: {e}") from e
     except httpx.HTTPError as e:
         raise ArxivAPIError(f"arXiv API request failed: {e}") from e
 

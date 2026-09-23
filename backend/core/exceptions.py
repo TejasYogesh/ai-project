@@ -27,3 +27,6 @@ class PaperNotIndexed(AgentError):
     
 class BriefingError(AgentError):
     """The LLM could not produce a valid briefing."""
+    
+class ArxivQueryError(ArxivAPIError):
+    """arXiv rejected the search query itself (HTTP 400), e.g. invalid syntax."""

@@ -1,4 +1,6 @@
 """Pydantic schemas shared across the project."""
+"""Pydantic schemas shared across the project."""
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -131,3 +133,80 @@ class StandaloneQuestion(BaseModel):
 class RewrittenQuery(BaseModel):
     """LLM output: a new search query for a retry."""
     query: str = Field(description="A new search query using the paper's likely wording")
+    
+
+# ---------- Sessions (Stage 8) ----------
+
+class ReportSession(BaseModel):
+    """What the user gets back after asking for a briefing."""
+    report_id: str
+    conversation_id: str
+    briefing: Briefing
+    reused: bool = False                     # True if a saved briefing was returned
+    steps: list[str] = []
+    candidates: list[RankedPaper] = []       # shortlist when the input was a topic
+    
+# ---------- Sessions (Stage 8) ----------
+
+class ReportSession(BaseModel):
+    """What the user gets back after asking for a briefing."""
+    report_id: str
+    conversation_id: str
+    briefing: Briefing
+    reused: bool = False                     # True if a saved briefing was returned
+    steps: list[str] = []
+    candidates: list[RankedPaper] = []       # shortlist when the input was a topic
+    
+    
+# ---------- API requests and responses (Stage 9) ----------
+
+class ExploreRequest(BaseModel):
+    topic: str = Field(min_length=3, examples=["recent work on KV-cache compression for LLMs"])
+
+
+class ExploreResponse(BaseModel):
+    chosen: PaperMeta
+    shortlist: list[RankedPaper]
+    tried_queries: list[str]
+    warnings: list[str] = []
+
+
+class ReportRequest(BaseModel):
+    input: str = Field(min_length=1, description="arXiv ID, arXiv URL, or a research topic",
+                       examples=["1706.03762"])
+    refresh: bool = Field(default=False, description="Regenerate even if a briefing is saved")
+
+
+class ReportSummary(BaseModel):
+    id: str
+    arxiv_id: str
+    title: str
+    created_at: datetime
+
+
+class PaperView(BaseModel):
+    paper: PaperMeta
+    parse_quality: str
+    indexed: bool
+    report_ids: list[str]
+
+
+class ConversationCreate(BaseModel):
+    report_id: str
+
+
+class ConversationCreated(BaseModel):
+    conversation_id: str
+    report_id: str
+    arxiv_id: str
+
+
+class QuestionRequest(BaseModel):
+    question: str = Field(min_length=1, examples=["How many layers does the encoder have?"])
+
+
+class ConversationView(BaseModel):
+    conversation_id: str
+    report_id: str
+    arxiv_id: str
+    messages: list[QAAnswer]

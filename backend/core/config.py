@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     embed_batch_size: int = 10          # chunks per embedding request
     embed_pause_seconds: float = 1.0    # pause between batches
 
+    database_url: str = "sqlite:///data/app.db"
     # storage
     chroma_path: str = "data/chroma"
 

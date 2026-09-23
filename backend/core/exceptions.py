@@ -34,3 +34,14 @@ class ArxivQueryError(ArxivAPIError):
     
 class QAError(AgentError):
     """The QA agent could not complete (e.g. the LLM was unavailable)."""
+    
+class PipelineError(AgentError):
+    """The paper graph ended with an error."""
+
+
+class ReportNotFound(AgentError):
+    """No saved briefing has this ID."""
+
+
+class ConversationNotFound(AgentError):
+    """No saved conversation has this ID."""

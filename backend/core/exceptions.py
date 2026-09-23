@@ -19,3 +19,7 @@ class PDFDownloadError(AgentError):
 
 class PDFParseError(AgentError):
     """The PDF could not be opened or read."""
+    
+
+class PaperNotIndexed(AgentError):
+    """A question was asked about a paper that has not been indexed yet."""

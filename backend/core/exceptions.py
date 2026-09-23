@@ -30,3 +30,7 @@ class BriefingError(AgentError):
     
 class ArxivQueryError(ArxivAPIError):
     """arXiv rejected the search query itself (HTTP 400), e.g. invalid syntax."""
+    
+    
+class QAError(AgentError):
+    """The QA agent could not complete (e.g. the LLM was unavailable)."""

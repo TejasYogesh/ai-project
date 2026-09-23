@@ -27,3 +27,23 @@ JUDGE_PROMPT = PromptTemplate(
     "Plain keywords are all required to match. To find a specific known paper, you may search "
     'the title or author field, e.g. ti:"exact title" or au:surname.\n'
 )
+
+CONDENSE_PROMPT = PromptTemplate(
+    "Rewrite the user's latest question as a standalone question about the research paper, "
+    "replacing words like 'it', 'that', 'they' or 'this' with what they refer to in the "
+    "conversation. Keep the meaning exactly; do not answer it. If the question is already "
+    "standalone, return it unchanged.\n\n"
+    "Conversation:\n{history}\n\n"
+    "Latest question: {question}"
+)
+
+REWRITE_PROMPT = PromptTemplate(
+    "A search over chunks of a research paper did not find enough information to answer "
+    "this question.\n\n"
+    "Question: {question}\n"
+    "Search queries already tried: {tried}\n"
+    "Why the retrieved text was insufficient: {reason}\n\n"
+    "Write ONE new search query that is more likely to match the paper's own wording: use the "
+    "technical terms a paper would use, synonyms, or the kind of section likely to contain the "
+    "answer. It must be different from the queries already tried."
+)

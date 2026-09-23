@@ -119,3 +119,15 @@ class Judgment(BaseModel):
     refined_query: str | None = Field(
         default=None, description="If not good enough: a NEW search query, different from those tried")
     reason: str = Field(description="One sentence explaining the decision")
+    
+
+# ---------- QA agent (Stage 7c) ----------
+
+class StandaloneQuestion(BaseModel):
+    """LLM output: a follow-up rewritten so it makes sense on its own."""
+    question: str = Field(description="The question rewritten to be understandable without the conversation")
+
+
+class RewrittenQuery(BaseModel):
+    """LLM output: a new search query for a retry."""
+    query: str = Field(description="A new search query using the paper's likely wording")

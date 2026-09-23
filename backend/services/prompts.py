@@ -2,13 +2,17 @@
 from llama_index.core import PromptTemplate
 
 GRADE_PROMPT = PromptTemplate(
-    "You are checking whether excerpts from a research paper contain enough information "
-    "to answer a question.\n\n"
+    "You are checking whether excerpts from a research paper contain information that "
+    "answers a question.\n\n"
     "Question: {question}\n\n"
     "Excerpts:\n{context}\n\n"
-    "List the excerpt numbers that are relevant, and decide whether together they are "
-    "sufficient to answer the question. Be strict: excerpts about a related topic are NOT "
-    "sufficient; the specific information asked for must actually be present."
+    "List the excerpt numbers that are relevant, and decide whether they are sufficient.\n"
+    "- sufficient = true if the excerpts contain information that directly answers the "
+    "question, even if only partially or spread across sections (for example, limitations "
+    "mentioned in the conclusion or as future work count).\n"
+    "- sufficient = false if the excerpts are only about a related topic and the specific "
+    "information asked for is absent (for example, the question asks for a cost in dollars "
+    "but the paper only reports FLOPs)."
 )
 
 ANSWER_PROMPT = PromptTemplate(
@@ -21,6 +25,8 @@ ANSWER_PROMPT = PromptTemplate(
     "Recent conversation (only for resolving words like 'it' or 'that'):\n{history}\n\n"
     "Excerpts:\n{context}\n\n"
     "Question: {question}"
+    "- If the excerpts answer only part of the question, answer that part and briefly say "
+    "what the paper does not state.\n"
 )
 
 BRIEFING_PROMPT = PromptTemplate(

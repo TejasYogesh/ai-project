@@ -60,3 +60,37 @@ class ParsedPaper(BaseModel):
     num_pages: int
     parse_quality: Literal["full", "partial", "abstract_only"]
     warnings: list[str] = []
+    
+# ---------- Briefing (Stage 6) ----------
+
+class Limitation(BaseModel):
+    """One limitation, labelled by where it comes from."""
+    text: str = Field(description="The limitation, in one sentence")
+    source: Literal["stated", "inferred"] = Field(
+        description="'stated' if the authors say it in the paper, 'inferred' if you deduced it")
+
+
+class BriefingContent(BaseModel):
+    """The part of the briefing the LLM writes."""
+    why_it_matters: str = Field(
+        description="One plain-English paragraph (3-5 sentences) for a smart non-specialist: "
+                    "what the paper does and why it matters, based only on the paper's own claims")
+    problem_statement: str = Field(description="The problem the paper addresses, in 2-3 sentences")
+    method: list[str] = Field(description="3-6 bullet points describing the approach")
+    key_results: list[str] = Field(
+        description="3-6 key results or claims, including the specific numbers reported in the paper")
+    limitations: list[Limitation] = Field(
+        min_length=1, description="At least one limitation; include stated ones and inferred ones")
+    suggested_questions: list[str] = Field(
+        description="3-5 follow-up questions a reader might ask that the paper can answer")
+
+
+class Briefing(BriefingContent):
+    """The full briefing: LLM-written content plus metadata taken directly from arXiv."""
+    title: str
+    authors: list[str]
+    arxiv_id: str
+    published: str
+    link: str
+    parse_quality: str
+    warnings: list[str] = []

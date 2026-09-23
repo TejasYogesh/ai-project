@@ -23,3 +23,7 @@ class PDFParseError(AgentError):
 
 class PaperNotIndexed(AgentError):
     """A question was asked about a paper that has not been indexed yet."""
+    
+    
+class BriefingError(AgentError):
+    """The LLM could not produce a valid briefing."""

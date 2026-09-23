@@ -22,3 +22,23 @@ ANSWER_PROMPT = PromptTemplate(
     "Excerpts:\n{context}\n\n"
     "Question: {question}"
 )
+
+BRIEFING_PROMPT = PromptTemplate(
+    "You are writing an executive briefing about a research paper for a busy engineer "
+    "deciding whether to read it in full.\n\n"
+    "Rules:\n"
+    "- Use ONLY the paper text below. Do not use outside knowledge about this paper, its "
+    "authors, or later work that built on it, even if you know about them.\n"
+    "- Key results must use the exact numbers reported in the paper.\n"
+    "- Limitations are required. Include limitations the authors state, and limitations you "
+    "can reasonably infer from the paper (for example: what was not evaluated, assumptions "
+    "made, compute requirements). Label each one correctly as 'stated' or 'inferred'.\n"
+    "- Suggested questions must be answerable from the paper text.\n"
+    "- Write for a smart non-specialist: plain English, no unexplained jargon.\n\n"
+    "Paper metadata:\n{metadata}\n\n"
+    "Paper text (sections in order):\n{paper_text}"
+    "- Limitations are required. Include limitations the authors state, and limitations you "
+    "can reasonably infer from the paper (for example: what was not evaluated, assumptions "
+    "made, compute requirements). Label each one correctly as 'stated' or 'inferred'. "
+    "Problems the authors name as future work count as 'stated'.\n"
+)

@@ -11,8 +11,6 @@ Built with **LangGraph** (orchestration), **LlamaIndex** (retrieval), **Google G
 
 🎥 **Video (Google Drive):** https://drive.google.com/drive/folders/17gEF5e8bY8g0FQtWfDc0NbKHibbEcAX6?usp=sharing
 
-> **TODO before submitting:** replace the placeholders marked `TODO` (repo URL, video link, screenshots) and check the test count.
-
 ---
 
 ## Contents

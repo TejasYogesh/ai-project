@@ -9,6 +9,8 @@ python cli.py brief "recent work on KV-cache compression for LLMs"  # a topic
 
 Built with **LangGraph** (orchestration), **LlamaIndex** (retrieval), **Google Gemini** (LLM + embeddings), **ChromaDB** (vectors), **PyMuPDF** (PDF parsing), **SQLite** (sessions), **FastAPI** + a **Typer** CLI.
 
+🎥 **Video (Google Drive):** https://drive.google.com/drive/folders/17gEF5e8bY8g0FQtWfDc0NbKHibbEcAX6?usp=sharing
+
 > **TODO before submitting:** replace the placeholders marked `TODO` (repo URL, video link, screenshots) and check the test count.
 
 ---
@@ -370,4 +372,4 @@ demo/                    run_demo.py, example_run.md, graphs.md, screenshots
 
 ## Video
 
-TODO: link to the 4-minute reflection video.
+https://drive.google.com/drive/folders/17gEF5e8bY8g0FQtWfDc0NbKHibbEcAX6?usp=sharing

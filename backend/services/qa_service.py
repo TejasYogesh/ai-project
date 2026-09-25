@@ -4,12 +4,14 @@ Building blocks used by the QA agent, plus answer_question(), a simple linear ve
 """
 import logging
 
-from llama_index.core.schema import NodeWithScore
+from llama_index.core.schema import NodeWithScore, TextNode
 
 from backend.core.config import settings
 from backend.core.llm import structured_llm_call
-from backend.models.schemas import AnswerDraft, Citation, GradeResult, QAAnswer
+from backend.models import database as db
+from backend.models.schemas import AnswerDraft, Citation, GradeResult, PaperMeta, QAAnswer
 from backend.services import vector_store
+from backend.services.summarizer import metadata_text
 from backend.services.prompts import ANSWER_PROMPT, GRADE_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -43,13 +45,24 @@ def not_found_answer(question: str, top_score: float | None, reason: str) -> QAA
     return QAAnswer(question=question, answer=NOT_FOUND, found=False, top_score=top_score)
 
 
+def paper_details_node(arxiv_id: str) -> NodeWithScore | None:
+    """Title/authors/date from arXiv metadata. The PDF chunks rarely carry these reliably,
+    so questions like 'what is the title?' need this pseudo-chunk."""
+    row = db.get_paper(arxiv_id)
+    if row is None:
+        return None
+    text = metadata_text(PaperMeta.model_validate_json(row.meta_json))
+    return NodeWithScore(node=TextNode(text=text, metadata={"section": "Paper details", "page": 1}))
+
+
 def retrieve_relevant(arxiv_id: str, query: str) -> tuple[list[NodeWithScore], float | None]:
-    """Layer 1: retrieve top-k chunks and keep those above the similarity cutoff.
-    Returns (kept_chunks, best_score)."""
+    """Layer 1: retrieve top-k chunks and keep those above the similarity cutoff, plus
+    the paper-details chunk when chunks survive. Returns (kept_chunks, best_score)."""
     results = vector_store.retrieve(arxiv_id, query)
     top_score = results[0].score if results else None
     kept = [r for r in results if r.score is not None and r.score >= settings.similarity_cutoff]
-    return kept, top_score
+    details = paper_details_node(arxiv_id) if kept else None
+    return ([details] if details else []) + kept, top_score
 
 
 def grade_context(question: str, nodes: list[NodeWithScore]) -> GradeResult:

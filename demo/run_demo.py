@@ -1,0 +1,136 @@
+"""Reproducible example run: brief papers, ask questions, and save a Markdown transcript.
+
+Run from the project root:
+    python -m demo.run_demo
+
+Writes:
+    demo/example_run.md  - briefings + QA exchanges (the README's example run)
+    demo/graphs.md       - Mermaid diagrams of the three LangGraph graphs
+"""
+import logging
+import time
+from pathlib import Path
+
+from backend.agents import session
+from backend.agents.paper_agent import paper_graph
+from backend.agents.qa_agent import qa_graph
+from backend.agents.topic_explorer import explorer_graph
+from backend.core.exceptions import AgentError
+from backend.core.llm import init_llm
+from backend.models import database as db
+from backend.models.schemas import QAAnswer
+from backend.services.summarizer import briefing_to_markdown
+
+logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
+for noisy in ("httpx", "chromadb"):
+    logging.getLogger(noisy).setLevel(logging.WARNING)
+logging.getLogger("google_genai").setLevel(logging.ERROR)
+
+DEMO_DIR = Path(__file__).parent
+
+# (input, questions). The questions cover: a direct fact, a follow-up that needs the
+# conversation history, an on-topic question the paper does not answer, and an
+# off-topic question. The last two should be refused, not answered.
+EXAMPLES = [
+    ("1706.03762", [
+        "How many layers does the encoder have?",
+        "And how many attention heads does it use?",
+        "How much did it cost in dollars to train the big model?",
+        "What is the capital of France?",
+    ]),
+    ("recent work on KV-cache compression for LLMs", [
+        "What problem does this paper address?",
+        "What are its main results?",
+    ]),
+]
+
+
+def _demote_headings(markdown: str) -> str:
+    """Nest the briefing's headings under the transcript's own headings."""
+    return "\n".join("##" + line if line.startswith("#") else line for line in markdown.splitlines())
+
+
+def _qa_block(answer: QAAnswer) -> str:
+    """One question and answer, formatted as Markdown."""
+    lines = [f"**Q:** {answer.question}", "", f"**A:** {answer.answer}"]
+    if answer.citations:
+        cites = "; ".join(f"[{c.number}] {c.section} (p.{c.page})" for c in answer.citations)
+        lines += ["", f"*Citations: {cites}*"]
+    if not answer.found:
+        lines += ["", "*(Refused: not found in the paper.)*"]
+    if answer.top_score is not None:
+        lines += ["", f"*Best retrieval score: {answer.top_score:.3f}*"]
+    return "\n".join(lines)
+
+
+def run_example(user_input: str, questions: list[str]) -> list[str]:
+    """Brief one input, ask its questions, and return the transcript lines."""
+    print(f"\nBriefing: {user_input}")
+    out = [f"## Input: `{user_input}`", ""]
+
+    start = time.time()
+    try:
+        # refresh=True runs the full graph even if a briefing is saved,
+        # so the transcript shows real graph steps and timings.
+        result = session.create_report(user_input, refresh=True)
+    except AgentError as e:
+        print(f"  Error: {e}")
+        return out + [f"**Error:** {e}", ""]
+    elapsed = time.time() - start
+    print(f"  Done in {elapsed:.0f}s: {result.briefing.title}")
+
+    out += [f"**Graph steps:** `{' -> '.join(result.steps)}`  ",
+            f"**Time:** {elapsed:.0f}s", ""]
+    if len(result.candidates) > 1:
+        shortlist = ", ".join(f"{c.paper.arxiv_id} ({c.paper.title})" for c in result.candidates)
+        out += [f"**Shortlist:** {shortlist}", ""]
+    out += ["### Briefing", "", _demote_headings(briefing_to_markdown(result.briefing)), "",
+            "### Questions and answers", ""]
+
+    for question in questions:
+        print(f"  Q: {question}")
+        try:
+            answer = session.ask_in_conversation(result.conversation_id, question)
+            print(f"     found={answer.found}")
+            out += [_qa_block(answer), "", "---", ""]
+        except AgentError as e:
+            # an upstream failure is recorded, not fatal: the demo keeps going
+            print(f"     Error: {e}")
+            out += [f"**Q:** {question}", "", f"**Error:** {e}", "", "---", ""]
+    return out
+
+
+def export_graphs() -> None:
+    """Write Mermaid diagrams of all three graphs to demo/graphs.md."""
+    sections = ["# Agent graphs", "",
+                "Generated from the compiled LangGraph graphs by `python -m demo.run_demo`.", ""]
+    for name, graph in [("Paper graph", paper_graph),
+                        ("Topic explorer agent", explorer_graph),
+                        ("QA agent", qa_graph)]:
+        mermaid = graph.get_graph().draw_mermaid()
+        mermaid = mermaid[mermaid.index("graph TD"):]      # drop LangGraph's config header
+        sections += [f"## {name}", "", "```mermaid", mermaid.strip(), "```", ""]
+    (DEMO_DIR / "graphs.md").write_text("\n".join(sections), encoding="utf-8")
+
+
+def main() -> None:
+    init_llm()
+    db.init_db()
+
+    export_graphs()
+    print(f"Saved {DEMO_DIR / 'graphs.md'}")
+
+    transcript = ["# Example run", "",
+                  "Generated by `python -m demo.run_demo`. Both examples use `refresh=True`, "
+                  "so every step of the graph runs for real. The last two questions for the "
+                  "first paper are expected to be refused.", ""]
+    for user_input, questions in EXAMPLES:
+        transcript += run_example(user_input, questions)
+
+    path = DEMO_DIR / "example_run.md"
+    path.write_text("\n".join(transcript), encoding="utf-8")
+    print(f"\nSaved {path}")
+
+
+if __name__ == "__main__":
+    main()

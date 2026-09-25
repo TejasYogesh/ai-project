@@ -27,7 +27,7 @@ def _paper_text(parsed: ParsedPaper, max_chars: int) -> tuple[str, bool]:
     return "\n".join(parts), False
 
 
-def _metadata_text(paper: PaperMeta) -> str:
+def metadata_text(paper: PaperMeta) -> str:
     lines = [f"Title: {paper.title}",
              f"Authors: {', '.join(paper.authors)}",
              f"Published: {paper.published}",
@@ -76,7 +76,7 @@ def make_briefing(paper: PaperMeta, parsed: ParsedPaper) -> Briefing:
     if parsed.parse_quality == "abstract_only":
         warnings.append("The PDF could not be read; this briefing is based on the abstract only.")
 
-    content = _generate_content(_metadata_text(paper), paper_text)
+    content = _generate_content(metadata_text(paper), paper_text)
     missing = _unverified_numbers(content, paper_text)
     if missing:
         warnings.append("Numbers not found verbatim in the paper text (verify manually): "

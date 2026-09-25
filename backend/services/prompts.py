@@ -21,12 +21,12 @@ ANSWER_PROMPT = PromptTemplate(
     "- Every factual sentence must cite the excerpt(s) it comes from, like [1] or [2][3].\n"
     "- Do not use outside knowledge, even if you know the answer.\n"
     "- If the excerpts do not contain the answer, set answerable to false.\n"
+    "- If the excerpts answer only part of the question, answer that part and briefly say "
+    "what the paper does not state.\n"
     "- Be concise: 2 to 5 sentences.\n\n"
     "Recent conversation (only for resolving words like 'it' or 'that'):\n{history}\n\n"
     "Excerpts:\n{context}\n\n"
     "Question: {question}"
-    "- If the excerpts answer only part of the question, answer that part and briefly say "
-    "what the paper does not state.\n"
 )
 
 BRIEFING_PROMPT = PromptTemplate(

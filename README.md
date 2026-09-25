@@ -48,6 +48,10 @@ Briefings and conversations are saved in SQLite, so a conversation can be resume
 
 ## Architecture
 
+![Low-level architecture and briefing workflow](docs/architecture.png)
+
+*Left: components and storage. Right: the call sequence for creating a briefing (`create_report` → paper graph → saved paper, report and conversation).* [Open the editable diagram in Excalidraw](https://excalidraw.com/#json=9rjiwlcYRuvncu-ESSK5P,Bd6EO9cOtQEoAGVxx0fGpA).
+
 ### Layers
 
 ```
